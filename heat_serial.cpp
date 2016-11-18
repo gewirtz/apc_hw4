@@ -6,10 +6,10 @@
 //deltat < deltax^2/4kappa
 
 #include <iostream>
-#include <math>
+#include <math.h>
 using namespace std;
 
-#define PI 3.14159265358979323846;
+#define PI 3.14159265358979323846
 
 int main(int argc, char* argv[]){
 
@@ -20,12 +20,12 @@ int main(int argc, char* argv[]){
 	const int nx = atoi(argv[1]);
 
 	//create the grids
-	double **grid = new double[nx]; 
+	double **grid = new double*[nx]; 
 	for(int i = 0; i < nx; i++){
 		grid[i] = new double[nx];
 	}
 
-	double **nextgrid = new double[nx];
+	double **nextgrid = new double*[nx];
 	for(int i=0; i<nx; i++){
 		nextgrid[i] = new double[nx];
 	}
@@ -66,16 +66,16 @@ int main(int argc, char* argv[]){
 			}
 		}
 		for(int i=1;i<(nx-1);i++){ //for the first column
-			numerator = grid[i][nx-1] + grid[i][1] + grid[i-1][0] + grid[i+1][0] - 4*grid[i][j];
-			nextgrid[i][0] = grid[i][j] + (dt*kappa*numerator/(dx*dx));
+			numerator = grid[i][nx-1] + grid[i][1] + grid[i-1][0] + grid[i+1][0] - 4*grid[i][0];
+			nextgrid[i][0] = grid[i][0] + (dt*kappa*numerator/(dx*dx));
 		}
 		for(int i=1;i<(nx-1);i++){ // for the last column
-			numerator = grid[i][nx-2] + grid[i][0] + grid[i-1][nx-1] + grid[i+1][nx-1] -4*grid[i][j];
-			nextgrid[i][0] = grid[i][j] + (dt*kappa*numerator/(dx*dx));
+			numerator = grid[i][nx-2] + grid[i][0] + grid[i-1][nx-1] + grid[i+1][nx-1] -4*grid[i][nx-1];
+			nextgrid[i][0] = grid[i][nx-1] + (dt*kappa*numerator/(dx*dx));
 		}
 		for(int i=1; i<(nx-1);i++){ //for the first row
-			numerator = grid[0][i-1] + grid[0][i+1] + grid[nx-1][i] + grid[1][i] - 4*grid[i][j];
-			nextgrid[0][i] = grid[i][j] + (dt*kappa*numerator/(dx*dx));
+			numerator = grid[0][i-1] + grid[0][i+1] + grid[nx-1][i] + grid[1][i] - 4*grid[0][i];
+			nextgrid[0][i] = grid[0][i] + (dt*kappa*numerator/(dx*dx));
 		}
 		numerator = grid[0][nx-1] + grid[0][1] + grid[nx-1][0] + grid[1][0] -4*grid[0][0]; //upper left corner
 		nextgrid[0][0] = grid[0][0] + (dt*kappa*numerator/(dx*dx));
