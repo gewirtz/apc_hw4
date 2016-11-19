@@ -1,9 +1,6 @@
-//Runs with ./heat_serial <nx> for a solution with grid size nx^2
-//run until time t = 0.5 pi^2 / kappa
-//2D domain of size 0 leq x leq pi and 0 leq y leq pi
-//boundary conds: T(x,0) = cos^2x, T(x,pi)=sin^2x, T(0,y)=T(pi,y) (periodic in x)
-//start from init cond T=0 everywhere. Run until t = 0.5pi^2/kappa
-//deltat < deltax^2/4kappa
+//Adapted from the serial version to run with OpenMP and should be parallelized using the 
+//#pragma omp parallel for (C/C++) directive on the appropriate loops
+// it should run with ./heat_omp <nx> <nthreads>
 
 #include <iostream>
 #include <math.h>
@@ -11,6 +8,9 @@
 #include <stdio.h>
 #include <fstream>
 #include <stdlib.h>
+#include <omp.h>
+#include <string>
+
 using namespace std;
 
 #define PI 3.14159265358979323846
@@ -20,35 +20,48 @@ int main(int argc, char* argv[]){
 	struct timeval t_start,t_end;
 	gettimeofday(&t_start, NULL);
 
-	if(argc != 2){ //Check for the correct number of arguments
-		cerr << "Usage: ./heat_serial <nx>" << endl;
+	if(argc != 3){ //Check for the correct number of arguments
+		cerr << "Usage: ./heat_omp <nx> <nthreads>" << endl;
 		return(1);
 	}
 	const int nx = atoi(argv[1]);
-	if(nx<1){ //check that the parameters given make sense
-		cerr <<"Please enter positive nx " << endl;
+	const int nthreads = atoi(argv[2]);
+	if(nx<1 || nthreads<1){ //check that the parameters given make sense
+		cerr <<"Please enter positive nx and nthreads" << endl;
 		return(1);
 	}
-
+	bool parallel;
+	if(nthreads>1){
+		parallel=true;
+	}
+	else{
+		parallel=false;
+	}
 
 	//create the grids
 	double **grid = new double*[nx]; 
+	#pragma omp parallel for num_threads(nthreads) if(parallel)
 	for(int i = 0; i < nx; i++){
 		grid[i] = new double[nx];
 	}
 
 	double **nextgrid = new double*[nx];
+	#pragma omp parallel for if(parallel) num_threads(nthreads)
 	for(int i=0; i<nx; i++){
 		nextgrid[i] = new double[nx];
 	}
 	
 	//set initial and boundary conditions
+	int part_rows, th_id;
+	part_rows = nx/nthreads;
+
+	#pragma omp parallel for if(parallel) num_threads(nthreads)
 	for(int i=0; i<nx; i++){
 		for(int j=0; j<nx; j++){
 			if(j==0){
 				grid[i][j] = nextgrid[i][j] = cos(i*PI/double(nx)) * cos(i*PI/double(nx));
 			}
-			else if(j==(nx-1)){
+			else if(j==nx-1){
 				grid[i][j] = nextgrid[i][j] = sin(i*PI/double(nx)) * sin(i*PI/double(nx));
 			}
 			else{
@@ -59,7 +72,7 @@ int main(int argc, char* argv[]){
 
 	//run the centered finite difference method
 	double dx = PI/nx;
-	const double kappa = 1;
+	const double kappa = 2;
 	const double dt = (dx*dx)/(6*kappa);
 	const double tlim = 0.5*(PI*PI)/kappa;
 	const double stepnum = tlim/dt;
@@ -67,20 +80,21 @@ int main(int argc, char* argv[]){
 
 
 	for(int k = 0; k < stepnum; k++){
+		#pragma omp parallel for if(parallel) num_threads(nthreads) private(numerator)
 		for(int i = 1; i < (nx-1); i++){
 			for(int j = 1; j<(nx-1); j++){
 				numerator = grid[i-1][j] + grid[i+1][j] + grid[i][j-1] + grid[i][j+1] -4*grid[i][j];
 				nextgrid[i][j] = grid[i][j] + (dt*kappa*numerator/(dx*dx));
 			}
 		}
-		
-		for(int i=1; i<(nx-1);i++){ //for the first and last rows
+		#pragma omp parallel for if(parallel) num_threads(nthreads) private(numerator)
+		for(int i=1; i<(nx-1);i++){ //for the first row
 			numerator = grid[0][i-1] + grid[0][i+1] + grid[nx-1][i] + grid[1][i] - 4*grid[0][i];
 			nextgrid[0][i] = nextgrid[nx-1][i] = grid[0][i] + (dt*kappa*numerator/(dx*dx));
-			
 		}
 		
 		//change pointers from one array to the other
+		#pragma omp parallel for if(parallel) num_threads(nthreads)
 		for(int i=0; i<nx; i++){
 			for(int j=0; j<nx; j++){
 				grid[i][j] = nextgrid[i][j];
@@ -94,6 +108,7 @@ int main(int argc, char* argv[]){
 	cout << "Time: " << elapsed << endl;
 	//now get the final, volume-averaged temperature
 	double total=0;
+	//#pragma omp parallel for if(parallel) num_threads(nthreads) private(total)
 	for(int i=0;i<nx;i++){
 		for(int j=0;j<nx;j++){
 			total = total + grid[i][j];
@@ -107,13 +122,14 @@ int main(int argc, char* argv[]){
 	ofstream fout(fname);
 	for(int i=0; i<nx; i++){
 		for(int j=0; j<nx; j++){
-			fout << i <<" "<<j<<" "<<grid[i][j] << endl;
+			fout << grid[i][j] << endl;
 		}
 	}
 	fout << endl;
 	fout.close();
 
 	//free memory
+	#pragma omp parallel for if(parallel) num_threads(nthreads)
 	for(int i=0; i<nx; i++){
 		delete [] grid[i];
 		delete [] nextgrid[i];
