@@ -9,7 +9,7 @@ serial : heat_serial.cpp
 	$(CC) $(CFLAGS) $(^) -o $(@)
 
 omp : heat_omp.cpp
-	$(CC) $(CFLAGS) $O heat_omp.cpp -o heat_omp
+	$(CC) -fopenmp $(CFLAGS) $O heat_omp.cpp -o heat_omp
 
 clean:
 	\rm heat_serial heat_omp

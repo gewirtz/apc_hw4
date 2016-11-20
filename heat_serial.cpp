@@ -77,7 +77,6 @@ int main(int argc, char* argv[]){
 		for(int i=1; i<(nx-1);i++){ //for the first and last rows
 			numerator = grid[0][i-1] + grid[0][i+1] + grid[nx-1][i] + grid[1][i] - 4*grid[0][i];
 			nextgrid[0][i] = nextgrid[nx-1][i] = grid[0][i] + (dt*kappa*numerator/(dx*dx));
-			
 		}
 		
 		//change pointers from one array to the other

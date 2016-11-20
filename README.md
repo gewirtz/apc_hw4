@@ -16,4 +16,4 @@ temperature and the final, volume averaged temperature are provided using grid s
 
 heat_omp is run ./heat_omp <nx> <nthreads> for grid size nx^2. This is the serial implementation updated using openMP. Same details as above.
 
-heat_mpi is still being finished.
+heat_mpi is run using heat.run.<num processors>. This implementation using MPI and is run on the cluster. (I ran it on Della)
