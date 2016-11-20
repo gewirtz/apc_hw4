@@ -1,18 +1,25 @@
-objects: heat_serial heat_omp
-targets: heat_serial.cpp heat_omp.cpp
+#OBJS: heat_serial heat_omp heat_mpi
+#targets: heat_serial.cpp heat_omp.cpp
 
-CC = g++
-CFLAGS = -Wall 
-O = -fopenmp
+CXX = g++
+CXXFLAGS = -Wall  
+
+
+all : serial omp mpi
 
 serial : heat_serial.cpp 
-	$(CC) $(CFLAGS) $(^) -o $(@)
+	$(CXX) $(CXXFLAGS) heat_serial.cpp -o heat_serial
 
 omp : heat_omp.cpp
-	$(CC) -fopenmp $(CFLAGS) $O heat_omp.cpp -o heat_omp
+	$(CXX) -fopenmp $(CXXFLAGS) heat_omp.cpp -o heat_omp
+
+mpi : heat_mpi.cpp
+	mpic++ heat_mpi.cpp -o heat_mpi
 
 clean:
-	\rm heat_serial heat_omp
+	rm heat_serial heat_omp heat_mpi
+
+
 
 
 
